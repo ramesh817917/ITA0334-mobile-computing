@@ -1,0 +1,36 @@
+
+import numpy as np
+
+methods = ["SDMA", "TDMA", "FDMA", "CDMA", "OFDMA"]
+
+weights = np.array([0.30, 0.25, 0.20, 0.15, 0.10])
+
+ratings = {
+    "Cellular Voice": [4, 4, 3, 5, 5],
+    "Tactical Link": [3, 3, 2, 5, 3],
+    "Stadium Downlink": [4, 3, 3, 3, 5],
+    "Sensor Network": [2, 5, 3, 4, 4]
+}
+
+for deployment, scores in ratings.items():
+    scores = np.array(scores)
+
+    print("\n", deployment)
+
+    original = np.dot(weights, scores)
+    print("Original Scores:")
+
+    for m, s in zip(methods, scores):
+        print(m, round(s, 2))
+
+    print("Weighted Score:", round(original, 2))
+
+    for change in [-0.2, 0.2]:
+        new_weights = weights.copy()
+        new_weights[0] *= (1 + change)
+        new_weights /= np.sum(new_weights)
+
+        result = np.dot(new_weights, scores)
+
+        print("Weight change:", change * 100, "%")
+        print("New weighted score:", round(result, 2))
