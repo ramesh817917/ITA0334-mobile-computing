@@ -1,0 +1,55 @@
+
+import numpy as np
+
+np.random.seed(42)
+
+U = 8
+N = 64
+R = 1000
+SNR = 10
+
+fixed = np.zeros(U)
+round_robin = np.zeros(U)
+best = np.zeros(U)
+
+for r in range(R):
+    h = np.random.exponential(1, (U, N))
+    rate = np.log2(1 + SNR * h)
+
+    for u in range(U):
+        fixed[u] += np.sum(rate[u, u*8:(u+1)*8])
+        round_robin[u] += np.sum(rate[u, u::U])
+
+    winner = np.argmax(h, axis=0)
+
+    for k in range(N):
+        best[winner[k]] += rate[winner[k], k]
+
+fixed /= R
+round_robin /= R
+best /= R
+
+def fairness(x):
+    return np.sum(x)**2 / (U * np.sum(x**2))
+
+print("Fixed Contiguous")
+print("User Throughput:", np.round(fixed, 2))
+print("Total:", round(np.sum(fixed), 2))
+print("Jain Fairness:", round(fairness(fixed), 3))
+
+print("\nRound Robin")
+print("User Throughput:", np.round(round_robin, 2))
+print("Total:", round(np.sum(round_robin), 2))
+print("Jain Fairness:", round(fairness(round_robin), 3))
+
+print("\nBest Subcarrier")
+print("User Throughput:", np.round(best, 2))
+print("Total:", round(np.sum(best), 2))
+print("Jain Fairness:", round(fairness(best), 3))
+
+print("\nOrthogonality Check")
+n = np.arange(N)
+for k in [1, 2, 3]:
+    for m in [1, 2, 3]:
+        value = np.mean(np.exp(2j*np.pi*(k-m)*n/N))
+        print(k, m, round(abs(value), 6))
