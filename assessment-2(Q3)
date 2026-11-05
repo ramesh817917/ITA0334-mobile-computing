@@ -1,0 +1,57 @@
+
+import numpy as np
+
+np.random.seed(42)
+
+def walsh(n):
+    H = np.array([[1]])
+    while len(H) < n:
+        H = np.block([[H, H], [H, -H]])
+    return H
+
+def simulate(L, mode):
+    users = min(8, L)
+    bits = 2000
+    data = np.random.choice([-1, 1], (users, bits))
+
+    if mode == 1 or mode == 3:
+        codes = walsh(L)[:users]
+    else:
+        codes = np.random.choice([-1, 1], (users, L))
+
+    if mode == 2:
+        codes = np.random.choice([-1, 1], (users, L))
+
+    power = np.ones(users)
+
+    if mode == 3 and users > 1:
+        power[1] = 10
+
+    signal = np.zeros((bits, L))
+
+    for u in range(users):
+        signal += data[u, :, None] * codes[u] * power[u]
+
+    noise = np.random.normal(0, 0.5, signal.shape)
+    received = signal + noise
+
+    output = received @ codes[0] / L
+    detected = np.where(output >= 0, 1, -1)
+
+    errors = np.sum(detected != data[0])
+    ber = errors / bits
+
+    correlation = np.dot(codes[0], codes[1]) / L if users > 1 else 0
+
+    print("Code Length:", L)
+    print("Condition:", mode)
+    print("Users:", users)
+    print("Bit Errors:", errors)
+    print("BER:", round(ber, 5))
+    print("Correlation:", round(correlation, 3))
+    print("Processing Gain:", round(10 * np.log10(L), 2), "dB")
+    print()
+
+for L in [8, 16, 64]:
+    for mode in [1, 2, 3]:
+        simulate(L, mode)
