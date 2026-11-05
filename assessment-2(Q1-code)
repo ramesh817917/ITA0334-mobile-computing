@@ -1,0 +1,48 @@
+
+import numpy as np
+
+def simulate(p):
+    rng = np.random.default_rng(42)
+    n = 1000
+    available = rng.random(n) < p
+
+    delivered = sum(available)
+    lost = n - delivered
+
+    queue = []
+    delays = []
+    delayed = 0
+    t = 0
+
+    while t < n or queue:
+
+        if t < n:
+            queue.append(t)
+            online = available[t]
+        else:
+            online = rng.random() < p
+
+        if online:
+            count = min(10, len(queue))
+
+            for i in range(count):
+                created = queue.pop(0)
+                delay = t - created
+                delays.append(delay)
+
+                if delay > 0:
+                    delayed += 1
+
+        t += 1
+
+    print("Availability:", p * 100, "%")
+    print("Immediate Delivered:", delivered)
+    print("Immediate Lost:", lost)
+    print("Store Forward Delivered:", len(delays))
+    print("Store Forward Delayed:", delayed)
+    print("Store Forward Lost:", 0)
+    print("Mean Delivery Delay:", round(np.mean(delays), 3))
+    print()
+
+for p in [0.9, 0.6, 0.3]:
+    simulate(p)
