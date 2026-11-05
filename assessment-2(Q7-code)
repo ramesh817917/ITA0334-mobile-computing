@@ -1,0 +1,87 @@
+
+import numpy as np
+
+np.random.seed(42)
+
+U = 8
+N = 64
+R = 1000
+MIN = 4
+SNR = 10
+
+original_total = 0
+revised_total = 0
+
+original_user = np.zeros(U)
+revised_user = np.zeros(U)
+
+original_zero = 0
+revised_zero = 0
+
+for r in range(R):
+    h = np.random.exponential(1, (U, N))
+    rate = np.log2(1 + SNR * h)
+
+    # Original best-subcarrier method
+    winner = np.argmax(h, axis=0)
+
+    for k in range(N):
+        original_user[winner[k]] += rate[winner[k], k]
+
+    original_zero += np.sum(np.bincount(
+        winner, minlength=U) == 0)
+
+    # Revised minimum-guaranteed method
+    allocation = np.zeros(N, dtype=int)
+    used = np.zeros(N, dtype=bool)
+
+    order = np.random.permutation(U)
+
+    for u in order:
+        available = np.where(~used)[0]
+        selected = available[
+            np.argsort(h[u, available])[-MIN:]
+        ]
+
+        allocation[selected] = u
+        used[selected] = True
+
+    remaining = np.where(~used)[0]
+
+    for k in remaining:
+        allocation[k] = np.argmax(h[:, k])
+
+    for k in range(N):
+        u = allocation[k]
+        revised_user[u] += rate[u, k]
+
+    revised_zero += np.sum(np.bincount(
+        allocation, minlength=U) == 0)
+
+original_user /= R
+revised_user /= R
+
+original_total = np.sum(original_user)
+revised_total = np.sum(revised_user)
+
+def fairness(x):
+    return np.sum(x)**2 / (U * np.sum(x**2))
+
+print("ORIGINAL METHOD")
+print("User Throughput:", np.round(original_user, 2))
+print("Total Throughput:", round(original_total, 2))
+print("Fairness:", round(fairness(original_user), 3))
+print("Zero Allocations:", original_zero)
+
+print("\nREVISED METHOD")
+print("User Throughput:", np.round(revised_user, 2))
+print("Total Throughput:", round(revised_total, 2))
+print("Fairness:", round(fairness(revised_user), 3))
+print("Zero Allocations:", revised_zero)
+
+print("\nTHROUGHPUT CHANGE:",
+      round(revised_total - original_total, 2))
+
+print("FAIRNESS CHANGE:",
+      round(fairness(revised_user) -
+            fairness(original_user), 3))
