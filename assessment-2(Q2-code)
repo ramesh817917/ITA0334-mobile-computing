@@ -1,0 +1,56 @@
+
+def simulate(capacity, arrivals, total_time):
+    accepted = []
+    blocked = 0
+
+    for t in range(total_time):
+        current = [s for s in accepted if s[1] > t]
+
+        for start, duration, kind in arrivals:
+            if start == t:
+                if len(current) < capacity:
+                    record = (start, start + duration, kind)
+                    accepted.append(record)
+                    current.append(record)
+                else:
+                    blocked += 1
+
+    reserved = 0
+    active = 0
+
+    for t in range(total_time):
+        for start, end, kind in accepted:
+            if start <= t < end:
+                reserved += 1
+
+                if kind == "voice" or (t - start) % 10 == 0:
+                    active += 1
+
+    utilisation = reserved / (capacity * total_time) * 100
+    actual_use = active / (capacity * total_time) * 100
+    wasted = utilisation - actual_use
+
+    print("Accepted:", len(accepted))
+    print("Blocked:", blocked)
+    print("Utilisation:", round(utilisation, 2), "%")
+    print("Actual use:", round(actual_use, 2), "%")
+    print("Wasted capacity:", round(wasted, 2), "%")
+
+voice = [(i * 2, 30, "voice") for i in range(100)]
+data = [(i, 20, "data") for i in range(250)]
+edge = [(50, 10, "voice") for i in range(100)]
+
+datasets = [
+    ("Continuous Voice", voice, 240),
+    ("Bursty Data", data, 300),
+    ("Synchronized Arrivals", edge, 100)
+]
+
+for name, arrivals, total_time in datasets:
+    print("\n", name)
+
+    print("FDMA")
+    simulate(79, arrivals, total_time)
+
+    print("TDMA")
+    simulate(70, arrivals, total_time)
